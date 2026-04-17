@@ -85,7 +85,17 @@ export default function PostListing() {
       }
       const { data, error } = await supabase
         .from("listings")
-        .insert([{ ...parsed.data, photos: photoUrls, user_id: user.id }])
+        .insert([{
+          type,
+          title,
+          description,
+          price: type === "service" && !price ? null : price ? Number(price) : null,
+          category,
+          location,
+          contact_phone: phone,
+          photos: photoUrls,
+          user_id: user.id,
+        }])
         .select()
         .single();
       if (error) throw error;
