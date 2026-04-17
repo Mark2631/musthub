@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Listing photos publicly accessible" ON storage.objects;
