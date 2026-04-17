@@ -1,59 +1,73 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingBag, Wrench, Home as HomeIcon, ChevronRight, Plus } from "lucide-react";
+import { ShoppingBag, Wrench, GraduationCap, ChevronRight, Plus, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { ListingCard } from "@/components/ListingCard";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ensureSeedData } from "@/lib/seed";
 import type { Database } from "@/integrations/supabase/types";
 
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
 
 const sections = [
-  { type: "marketplace", label: "Marketplace", desc: "Phones, laptops, more", icon: ShoppingBag, color: "from-emerald-500 to-green-600" },
-  { type: "service", label: "Services", desc: "Hair, tutors, repairs", icon: Wrench, color: "from-amber-500 to-orange-600" },
-  { type: "rental", label: "Rentals", desc: "Hostels & houses", icon: HomeIcon, color: "from-sky-500 to-blue-600" },
+  { to: "/browse?type=marketplace", label: "Marketplace", desc: "Phones, laptops, more", icon: ShoppingBag, color: "from-emerald-500 to-green-600" },
+  { to: "/browse?type=service", label: "Services", desc: "Hair, tutors, repairs", icon: Wrench, color: "from-amber-500 to-orange-600" },
+  { to: "/my-school", label: "My School", desc: "Rentals, updates, links", icon: GraduationCap, color: "from-sky-500 to-blue-600" },
 ] as const;
 
 export default function Home() {
   const [recent, setRecent] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ items: 0, housing: 0 });
 
   useEffect(() => {
     (async () => {
       await ensureSeedData();
-      const { data } = await supabase
-        .from("listings")
-        .select("*")
-        .eq("status", "available")
-        .order("created_at", { ascending: false })
-        .limit(8);
+      const [{ data }, items, housing] = await Promise.all([
+        supabase.from("listings").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(8),
+        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["marketplace", "service"] as any),
+        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["rental-info", "rental"] as any),
+      ]);
       setRecent(data ?? []);
+      setStats({ items: items.count ?? 0, housing: housing.count ?? 0 });
       setLoading(false);
     })();
   }, []);
 
   return (
     <div>
-      {/* Header */}
-      <header className="px-4 pt-5 pb-4 bg-card border-b border-border">
+      <header className="px-4 pt-5 pb-4 bg-card border-b border-border flex items-center justify-between">
         <Logo />
+        <ThemeToggle />
       </header>
 
-      {/* Hero */}
       <section className="px-4 py-5">
         <h1 className="text-2xl font-extrabold tracking-tight">Karibu! 👋</h1>
-        <p className="text-sm text-muted-foreground mt-1">What do you need around campus today?</p>
+        <p className="text-sm text-muted-foreground mt-1">For MUST students only.</p>
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="bg-card rounded-2xl p-3 shadow-soft">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><TrendingUp className="w-3 h-3" /> Listings</div>
+            <p className="text-xl font-extrabold mt-1">{stats.items}</p>
+            <p className="text-[10px] text-muted-foreground">items & services</p>
+          </div>
+          <div className="bg-card rounded-2xl p-3 shadow-soft">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><GraduationCap className="w-3 h-3" /> Housing</div>
+            <p className="text-xl font-extrabold mt-1">{stats.housing}</p>
+            <p className="text-[10px] text-muted-foreground">rooms near campus</p>
+          </div>
+        </div>
       </section>
 
-      {/* Three big cards */}
       <section className="px-4 space-y-3">
-        {sections.map(({ type, label, desc, icon: Icon, color }) => (
+        {sections.map(({ to, label, desc, icon: Icon, color }) => (
           <Link
-            key={type}
-            to={`/browse?type=${type}`}
+            key={to}
+            to={to}
             className="flex items-center gap-4 bg-card rounded-2xl p-4 shadow-card hover:shadow-floating transition-shadow"
           >
             <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0`}>
@@ -68,7 +82,6 @@ export default function Home() {
         ))}
       </section>
 
-      {/* Recent listings */}
       <section className="px-4 mt-7">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold">Fresh on campus</h2>

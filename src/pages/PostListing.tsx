@@ -8,19 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PrecautionBanner } from "@/components/PrecautionBanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 
-const TYPE_CHOICES: { v: ListingType; label: string; icon: any; color: string }[] = [
-  { v: "marketplace", label: "Marketplace", icon: ShoppingBag, color: "from-emerald-500 to-green-600" },
-  { v: "service", label: "Service", icon: Wrench, color: "from-amber-500 to-orange-600" },
-  { v: "rental", label: "Rental", icon: HomeIcon, color: "from-sky-500 to-blue-600" },
+const TYPE_CHOICES: { v: ListingType; label: string; icon: any; color: string; desc: string }[] = [
+  { v: "marketplace", label: "Marketplace", icon: ShoppingBag, color: "from-emerald-500 to-green-600", desc: "Sell items: phones, laptops, furniture..." },
+  { v: "service", label: "Service", icon: Wrench, color: "from-amber-500 to-orange-600", desc: "Offer skills: tutoring, hair, repairs..." },
+  { v: "rental-info", label: "Rental / Housing", icon: HomeIcon, color: "from-sky-500 to-blue-600", desc: "List a room or house near campus" },
 ];
 
 const schema = z.object({
-  type: z.enum(["marketplace", "service", "rental"]),
+  type: z.enum(["marketplace", "service", "rental-info"]),
   title: z.string().trim().min(3, "Title too short").max(120),
   description: z.string().trim().min(10, "Add a description (min 10 chars)").max(2000),
   price: z.number().nonnegative().nullable(),
@@ -42,6 +44,8 @@ export default function PostListing() {
   const [phone, setPhone] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [negotiable, setNegotiable] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -63,6 +67,10 @@ export default function PostListing() {
 
   const submit = async () => {
     if (!user || !type) return;
+    if (!agreeTerms) {
+      toast.error("Please agree to the Terms before posting");
+      return;
+    }
     const parsed = schema.safeParse({
       type, title, description,
       price: type === "service" && !price ? null : price ? Number(price) : null,
@@ -86,10 +94,11 @@ export default function PostListing() {
       const { data, error } = await supabase
         .from("listings")
         .insert([{
-          type,
+          type: type as any,
           title,
           description,
           price: type === "service" && !price ? null : price ? Number(price) : null,
+          negotiable,
           category,
           location,
           contact_phone: phone,
@@ -99,6 +108,7 @@ export default function PostListing() {
         .select()
         .single();
       if (error) throw error;
+      await supabase.from("profiles").update({ seller_agreed_at: new Date().toISOString() }).eq("user_id", user.id);
       toast.success("Listed! 🎉");
       nav(`/listing/${data.id}`, { replace: true });
     } catch (err: any) {
@@ -121,7 +131,7 @@ export default function PostListing() {
       {step === 1 && (
         <div className="p-5 space-y-4">
           <p className="text-sm text-muted-foreground">What are you posting?</p>
-          {TYPE_CHOICES.map(({ v, label, icon: Icon, color }) => (
+          {TYPE_CHOICES.map(({ v, label, icon: Icon, color, desc }) => (
             <button
               key={v}
               onClick={() => { setType(v); setCategory(""); setStep(2); }}
@@ -136,11 +146,7 @@ export default function PostListing() {
               </div>
               <div>
                 <div className="font-bold">{label}</div>
-                <div className="text-xs text-muted-foreground">
-                  {v === "marketplace" && "Sell items: phones, laptops, furniture..."}
-                  {v === "service" && "Offer skills: tutoring, hair, repairs..."}
-                  {v === "rental" && "List a room or house near campus"}
-                </div>
+                <div className="text-xs text-muted-foreground">{desc}</div>
               </div>
             </button>
           ))}
@@ -149,6 +155,7 @@ export default function PostListing() {
 
       {step === 2 && type && (
         <div className="p-5 space-y-4">
+          <PrecautionBanner />
           <div>
             <Label htmlFor="t">Title *</Label>
             <Input id="t" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. HP EliteBook 840 G5" maxLength={120} />
@@ -169,6 +176,10 @@ export default function PostListing() {
           <div>
             <Label htmlFor="pr">Price (KSh) {type === "service" && <span className="text-muted-foreground text-xs">(optional)</span>}</Label>
             <Input id="pr" type="number" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" />
+            <label className="flex items-center gap-2 mt-2 text-sm">
+              <Checkbox checked={negotiable} onCheckedChange={(v) => setNegotiable(!!v)} />
+              <span>Price is negotiable</span>
+            </label>
           </div>
           <div>
             <Label>Photos (up to 5)</Label>
@@ -191,13 +202,22 @@ export default function PostListing() {
             </div>
           </div>
           <div>
-            <Label htmlFor="loc">Location *</Label>
+            <Label htmlFor="loc">{type === "rental-info" ? "Location & landlord details *" : "Location *"}</Label>
             <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Near MUST main gate" maxLength={120} />
           </div>
           <div>
             <Label htmlFor="ph">Contact phone *</Label>
             <Input id="ph" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+254 7XX XXX XXX" maxLength={20} />
           </div>
+
+          <label className="flex items-start gap-2 text-xs leading-relaxed bg-muted/40 p-3 rounded-xl">
+            <Checkbox checked={agreeTerms} onCheckedChange={(v) => setAgreeTerms(!!v)} className="mt-0.5" />
+            <span>
+              I agree to the <span className="font-semibold">MeruCampusHub Terms</span>: I will list honestly,
+              not scam buyers, and meet in safe public places. Mispractices will get my account removed.
+            </span>
+          </label>
+
           <Button onClick={submit} disabled={submitting} variant="hero" size="xl" className="w-full">
             {submitting ? "Posting..." : "Post listing"}
           </Button>

@@ -1,38 +1,61 @@
-export type ListingType = "marketplace" | "service" | "rental";
+export type ListingType = "marketplace" | "service" | "rental-info";
 
 export const TYPE_LABELS: Record<ListingType, string> = {
   marketplace: "Marketplace",
   service: "Services",
-  rental: "Rentals",
+  "rental-info": "Housing",
 };
 
 export const CATEGORIES: Record<ListingType, string[]> = {
   marketplace: [
     "Electronics",
     "Phones & Accessories",
-    "Laptops",
-    "Household Goods",
-    "Furniture",
-    "Clothing",
+    "Laptops & Computers",
+    "Household Goods & Furniture",
+    "Clothing & Shoes",
+    "Books & Stationery",
     "Other",
   ],
   service: [
-    "Beauty & Hair",
+    "Beauty & Hair (nails, braiding, barber)",
     "Academic Tutoring",
     "Laundry & Cleaning",
-    "Repairs & Maintenance",
-    "Photography",
-    "Food Delivery",
+    "Phone/Laptop Repairs",
+    "Food Delivery/Snacks",
+    "Photography & Printing",
     "Other",
   ],
-  rental: [
+  "rental-info": [
     "Single Room",
+    "Bedsitter",
     "One Bedroom",
-    "Two Bedroom",
     "Self-Contained",
+    "Shared Room",
     "Other",
   ],
 };
+
+export const RENTAL_AMENITIES = ["Water", "Electricity", "Security", "WiFi", "Parking", "Furnished"];
+
+export const INTERESTS = [
+  { id: "marketplace", label: "Marketplace items" },
+  { id: "service", label: "Services" },
+  { id: "rental-info", label: "Rentals / Housing info" },
+  { id: "school", label: "School updates" },
+];
+
+export const HELP_CONTACT = {
+  email: "merucampushub@gmail.com",
+  phone: "+254745706087",
+  whatsapp: "+254745706087",
+};
+
+export const SCHOOL_LINKS = [
+  { label: "MUST Official Website", url: "https://www.must.ac.ke/" },
+  { label: "MUST Student Portal", url: "https://studentportal.must.ac.ke/" },
+  { label: "MUST eLearning", url: "https://elearning.must.ac.ke/" },
+  { label: "MUST Library", url: "https://library.must.ac.ke/" },
+];
 
 export const formatKsh = (price: number | null | undefined) => {
   if (price === null || price === undefined) return "Contact for price";
@@ -56,6 +79,9 @@ export const timeAgo = (dateStr: string) => {
 export const waLink = (phone: string, title: string) => {
   const clean = phone.replace(/[^\d+]/g, "");
   return `https://wa.me/${clean.replace(/^\+/, "")}?text=${encodeURIComponent(
-    `Hi, I'm interested in your "${title}" at MUST`
+    `Hi, I saw your "${title}" on MeruCampusHub. Is it still available? I'm a MUST student.`
   )}`;
 };
+
+export const BUYER_PRECAUTION =
+  "All transactions are one-on-one with the seller. Meet in safe public places near campus. No online money sending — deal at your own risk.";

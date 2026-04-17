@@ -16,12 +16,17 @@ export type Database = {
     Tables: {
       listings: {
         Row: {
+          amenities: string[]
           category: string
           contact_phone: string
           created_at: string
+          deposit: number | null
           description: string
+          distance_from_campus: string | null
           id: string
           location: string
+          monthly_rent: number | null
+          negotiable: boolean
           photos: string[]
           price: number | null
           status: Database["public"]["Enums"]["listing_status"]
@@ -29,14 +34,20 @@ export type Database = {
           type: Database["public"]["Enums"]["listing_type"]
           updated_at: string
           user_id: string
+          videos: string[]
         }
         Insert: {
+          amenities?: string[]
           category: string
           contact_phone: string
           created_at?: string
+          deposit?: number | null
           description: string
+          distance_from_campus?: string | null
           id?: string
           location: string
+          monthly_rent?: number | null
+          negotiable?: boolean
           photos?: string[]
           price?: number | null
           status?: Database["public"]["Enums"]["listing_status"]
@@ -44,14 +55,20 @@ export type Database = {
           type: Database["public"]["Enums"]["listing_type"]
           updated_at?: string
           user_id: string
+          videos?: string[]
         }
         Update: {
+          amenities?: string[]
           category?: string
           contact_phone?: string
           created_at?: string
+          deposit?: number | null
           description?: string
+          distance_from_campus?: string | null
           id?: string
           location?: string
+          monthly_rent?: number | null
+          negotiable?: boolean
           photos?: string[]
           price?: number | null
           status?: Database["public"]["Enums"]["listing_status"]
@@ -59,41 +76,98 @@ export type Database = {
           type?: Database["public"]["Enums"]["listing_type"]
           updated_at?: string
           user_id?: string
+          videos?: string[]
         }
         Relationships: []
       }
       profiles: {
         Row: {
+          bio: string | null
           created_at: string
           email: string | null
           id: string
+          interests: string[]
+          is_verified_seller: boolean
           name: string | null
+          onboarded: boolean
           phone: string | null
+          school_id_path: string | null
+          seller_agreed_at: string | null
           university: string
           updated_at: string
           user_id: string
+          user_role: string
         }
         Insert: {
+          bio?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          interests?: string[]
+          is_verified_seller?: boolean
           name?: string | null
+          onboarded?: boolean
           phone?: string | null
+          school_id_path?: string | null
+          seller_agreed_at?: string | null
           university?: string
           updated_at?: string
           user_id: string
+          user_role?: string
         }
         Update: {
+          bio?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          interests?: string[]
+          is_verified_seller?: boolean
           name?: string | null
+          onboarded?: boolean
           phone?: string | null
+          school_id_path?: string | null
+          seller_agreed_at?: string | null
           university?: string
           updated_at?: string
           user_id?: string
+          user_role?: string
         }
         Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          listing_id: string
+          reason: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          listing_id: string
+          reason: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          listing_id?: string
+          reason?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -104,7 +178,7 @@ export type Database = {
     }
     Enums: {
       listing_status: "available" | "sold"
-      listing_type: "marketplace" | "service" | "rental"
+      listing_type: "marketplace" | "service" | "rental" | "rental-info"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -233,7 +307,7 @@ export const Constants = {
   public: {
     Enums: {
       listing_status: ["available", "sold"],
-      listing_type: ["marketplace", "service", "rental"],
+      listing_type: ["marketplace", "service", "rental", "rental-info"],
     },
   },
 } as const

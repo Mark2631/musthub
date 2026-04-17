@@ -1,4 +1,4 @@
-import { Home, Search, PlusCircle, ListChecks, User } from "lucide-react";
+import { Home, Search, PlusCircle, GraduationCap, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -6,7 +6,7 @@ const items = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/browse", icon: Search, label: "Browse" },
   { to: "/post", icon: PlusCircle, label: "Post", primary: true },
-  { to: "/my-listings", icon: ListChecks, label: "Mine" },
+  { to: "/my-school", icon: GraduationCap, label: "My School" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
 
