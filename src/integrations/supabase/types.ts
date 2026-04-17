@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      listings: {
+        Row: {
+          category: string
+          contact_phone: string
+          created_at: string
+          description: string
+          id: string
+          location: string
+          photos: string[]
+          price: number | null
+          status: Database["public"]["Enums"]["listing_status"]
+          title: string
+          type: Database["public"]["Enums"]["listing_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          contact_phone: string
+          created_at?: string
+          description: string
+          id?: string
+          location: string
+          photos?: string[]
+          price?: number | null
+          status?: Database["public"]["Enums"]["listing_status"]
+          title: string
+          type: Database["public"]["Enums"]["listing_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          contact_phone?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          photos?: string[]
+          price?: number | null
+          status?: Database["public"]["Enums"]["listing_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["listing_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          phone: string | null
+          university: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          university?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          university?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +103,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      listing_status: "available" | "sold"
+      listing_type: "marketplace" | "service" | "rental"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +231,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      listing_status: ["available", "sold"],
+      listing_type: ["marketplace", "service", "rental"],
+    },
   },
 } as const
