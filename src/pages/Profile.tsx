@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Mail, Phone, GraduationCap, Save } from "lucide-react";
+import { LogOut, Mail, Phone, GraduationCap, Save, BadgeCheck, HelpCircle, ListChecks, MessageCircle, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { Footer } from "@/components/Footer";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { HELP_CONTACT } from "@/lib/constants";
 import { toast } from "sonner";
 
 export default function Profile() {
@@ -16,8 +19,10 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [verified, setVerified] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingId, setUploadingId] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -25,6 +30,7 @@ export default function Profile() {
       setName(data?.name ?? "");
       setPhone(data?.phone ?? "");
       setEmail(data?.email ?? user.email ?? "");
+      setVerified(!!data?.is_verified_seller);
     });
   }, [user]);
 
@@ -38,6 +44,31 @@ export default function Profile() {
     setEditing(false);
   };
 
+  const uploadSchoolId = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5 MB");
+    setUploadingId(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/school-id.${ext}`;
+      const { error: upErr } = await supabase.storage.from("school-ids").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ school_id_path: path, is_verified_seller: true })
+        .eq("user_id", user.id);
+      if (updErr) throw updErr;
+      setVerified(true);
+      toast.success("Verified Seller badge unlocked! ✅");
+    } catch (err: any) {
+      toast.error(err.message ?? "Upload failed");
+    } finally {
+      setUploadingId(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     nav("/auth", { replace: true });
@@ -47,7 +78,10 @@ export default function Profile() {
     <div>
       <header className="px-4 pt-5 pb-3 bg-card border-b border-border flex items-center justify-between">
         <Logo compact />
-        <span className="text-xs font-semibold text-muted-foreground">Profile</span>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <span className="text-xs font-semibold text-muted-foreground">Profile</span>
+        </div>
       </header>
 
       <section className="p-5">
@@ -55,7 +89,10 @@ export default function Profile() {
           <div className="w-20 h-20 rounded-full gradient-primary mx-auto flex items-center justify-center text-primary-foreground text-3xl font-extrabold shadow-floating">
             {(name || email || "M")[0].toUpperCase()}
           </div>
-          <h2 className="font-bold text-lg mt-3">{name || "MUST Student"}</h2>
+          <h2 className="font-bold text-lg mt-3 flex items-center justify-center gap-1.5">
+            {name || "MUST Student"}
+            {verified && <BadgeCheck className="w-5 h-5 text-primary" fill="currentColor" stroke="hsl(var(--primary-foreground))" />}
+          </h2>
           <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
             <GraduationCap className="w-3 h-3" /> Meru University of Science & Tech
           </p>
@@ -85,6 +122,63 @@ export default function Profile() {
           ) : (
             <Button variant="outline" className="w-full" onClick={() => setEditing(true)}>Edit profile</Button>
           )}
+        </div>
+
+        {/* Verification card */}
+        <div className="mt-5 bg-card rounded-2xl p-5 shadow-soft">
+          <div className="flex items-start gap-3">
+            <BadgeCheck className={`w-6 h-6 flex-shrink-0 ${verified ? "text-primary" : "text-muted-foreground"}`} />
+            <div className="flex-1">
+              <h3 className="font-bold text-sm">Verified Seller</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {verified
+                  ? "You're verified — buyers see a badge on your listings."
+                  : "Upload your MUST student ID to earn a Verified Seller badge."}
+              </p>
+            </div>
+          </div>
+          {!verified && (
+            <label className="mt-3 block">
+              <input type="file" accept="image/*" className="hidden" onChange={uploadSchoolId} disabled={uploadingId} />
+              <span className={`flex items-center justify-center gap-2 w-full h-10 rounded-md border border-input text-sm font-medium cursor-pointer hover:bg-muted/50 transition-colors ${uploadingId ? "opacity-50" : ""}`}>
+                <Upload className="w-4 h-4" />
+                {uploadingId ? "Uploading..." : "Upload School ID"}
+              </span>
+            </label>
+          )}
+        </div>
+
+        {/* Quick links */}
+        <div className="mt-5 bg-card rounded-2xl shadow-soft overflow-hidden divide-y divide-border">
+          <button onClick={() => nav("/my-listings")} className="w-full flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-muted/50 transition-colors text-left">
+            <ListChecks className="w-4 h-4 text-primary" />
+            <span className="font-medium flex-1">My Listings</span>
+          </button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="w-full flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-muted/50 transition-colors text-left">
+                <HelpCircle className="w-4 h-4 text-primary" />
+                <span className="font-medium flex-1">Help & Support</span>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="rounded-3xl">
+              <DialogHeader><DialogTitle>Need help?</DialogTitle></DialogHeader>
+              <p className="text-sm text-muted-foreground">Reach out to the creator anytime.</p>
+              <div className="space-y-2 mt-2">
+                <Button asChild variant="hero" className="w-full">
+                  <a href={`https://wa.me/${HELP_CONTACT.whatsapp.replace(/[^\d]/g, "")}?text=${encodeURIComponent("Hi, I need help with MeruCampusHub")}`} target="_blank" rel="noreferrer">
+                    <MessageCircle className="w-4 h-4" /> WhatsApp us
+                  </a>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <a href={`tel:${HELP_CONTACT.phone}`}><Phone className="w-4 h-4" /> Call us</a>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <a href={`mailto:${HELP_CONTACT.email}?subject=MeruCampusHub support`}><Mail className="w-4 h-4" /> Email us</a>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Button variant="ghost" className="w-full mt-5 text-destructive hover:text-destructive" onClick={handleSignOut}>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, MapPin, MessageCircle, Pencil, Trash2, CheckCircle2, RotateCcw, Phone, ImageIcon } from "lucide-react";
+import { ChevronLeft, MapPin, MessageCircle, Pencil, Trash2, CheckCircle2, RotateCcw, Phone, ImageIcon, BadgeCheck, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatKsh, timeAgo, TYPE_LABELS, waLink } from "@/lib/constants";
+import { PrecautionBanner } from "@/components/PrecautionBanner";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { Database } from "@/integrations/supabase/types";
@@ -45,6 +46,15 @@ export default function ListingDetail() {
 
   const isOwner = user?.id === listing.user_id;
   const photos = listing.photos.length ? listing.photos : [];
+
+  const reportListing = async () => {
+    if (!user) return toast.error("Sign in first");
+    const reason = window.prompt("Why are you reporting this listing? (e.g. scam, inappropriate)");
+    if (!reason) return;
+    const { error } = await supabase.from("reports").insert({ listing_id: listing.id, reporter_id: user.id, reason });
+    if (error) return toast.error(error.message);
+    toast.success("Thanks — we'll review this listing.");
+  };
 
   const toggleSold = async () => {
     const next = listing.status === "sold" ? "available" : "sold";
@@ -89,7 +99,10 @@ export default function ListingDetail() {
       <div className="p-5 space-y-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">{listing.title}</h1>
-          <p className="text-2xl font-bold text-primary mt-1">{formatKsh(listing.price)}</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <p className="text-2xl font-bold text-primary">{formatKsh(listing.price)}</p>
+            {listing.negotiable && <span className="text-xs font-semibold text-warning">Negotiable</span>}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -116,11 +129,22 @@ export default function ListingDetail() {
         {/* Seller */}
         <div className="bg-card rounded-2xl p-4 shadow-soft">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Seller</p>
-          <p className="font-semibold mt-1">{seller?.name ?? "MUST Student"}</p>
+          <p className="font-semibold mt-1 flex items-center gap-1.5">
+            {seller?.name ?? "MUST Student"}
+            {seller?.is_verified_seller && <BadgeCheck className="w-4 h-4 text-primary" />}
+          </p>
           <a href={`tel:${listing.contact_phone}`} className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
             <Phone className="w-3.5 h-3.5" /> {listing.contact_phone}
           </a>
         </div>
+
+        <PrecautionBanner />
+
+        {!isOwner && (
+          <button onClick={reportListing} className="w-full text-xs text-muted-foreground flex items-center justify-center gap-1.5 py-2 hover:text-destructive transition-colors">
+            <Flag className="w-3.5 h-3.5" /> Report this listing
+          </button>
+        )}
       </div>
 
       {/* Bottom action bar */}

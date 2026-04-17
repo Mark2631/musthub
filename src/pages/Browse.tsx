@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,11 @@ import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { Database } from "@/integrations/supabase/types";
 
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
-type TabKey = "all" | ListingType;
+type TabKey = "all" | ListingType | "school";
 
 export default function Browse() {
   const [params, setParams] = useSearchParams();
@@ -36,7 +37,8 @@ export default function Browse() {
     (async () => {
       setLoading(true);
       let query = supabase.from("listings").select("*").eq("status", "available");
-      if (tab !== "all") query = query.eq("type", tab);
+      if (tab === "school") query = query.in("type", ["rental-info", "rental"] as any);
+      else if (tab !== "all") query = query.eq("type", tab as any);
       if (sort === "newest") query = query.order("created_at", { ascending: false });
       else query = query.order("price", { ascending: true, nullsFirst: false });
       const { data } = await query.limit(200);
@@ -54,14 +56,18 @@ export default function Browse() {
     });
   }, [items, q, category, maxPrice]);
 
-  const categoryOptions = tab === "all" ? [] : CATEGORIES[tab];
+  const categoryOptions =
+    tab === "all" ? [] : tab === "school" ? CATEGORIES["rental-info"] : CATEGORIES[tab as ListingType];
 
   return (
     <div>
       <header className="px-4 pt-5 pb-3 bg-card border-b border-border sticky top-0 z-30">
         <div className="flex items-center justify-between mb-3">
           <Logo compact />
-          <span className="text-xs font-semibold text-muted-foreground">Browse</span>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <span className="text-xs font-semibold text-muted-foreground">Browse</span>
+          </div>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -79,7 +85,9 @@ export default function Browse() {
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="marketplace">Items</TabsTrigger>
           <TabsTrigger value="service">Services</TabsTrigger>
-          <TabsTrigger value="rental">Rentals</TabsTrigger>
+          <TabsTrigger value="school" asChild>
+            <Link to="/my-school">School</Link>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
