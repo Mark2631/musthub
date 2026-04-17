@@ -83,9 +83,10 @@ export default function PostListing() {
         const { data: { publicUrl } } = supabase.storage.from("listing-photos").getPublicUrl(path);
         photoUrls.push(publicUrl);
       }
+      const insertRow = { ...parsed.data, photos: photoUrls, user_id: user.id };
       const { data, error } = await supabase
         .from("listings")
-        .insert({ ...parsed.data, photos: photoUrls, user_id: user.id })
+        .insert(insertRow)
         .select()
         .single();
       if (error) throw error;
