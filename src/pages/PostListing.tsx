@@ -226,6 +226,33 @@ export default function PostListing() {
             </div>
           </div>
           <div>
+            <Label className="flex items-center gap-1.5">
+              <Video className="w-3.5 h-3.5" />
+              Video clips (up to 3, max 30MB each)
+              {type === "service" && <span className="text-primary text-[10px] font-semibold ml-1">Recommended</span>}
+            </Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {type === "service" ? "Show your work — hair designs, repair demos, etc." : "Optional video walkthrough."}
+            </p>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {videoPreviews.map((src, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-foreground">
+                  <video src={src} className="w-full h-full object-cover" muted playsInline />
+                  <button onClick={() => removeVideo(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {videoFiles.length < 3 && (
+                <label className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground cursor-pointer hover:border-primary hover:text-primary transition-colors">
+                  <Video className="w-6 h-6" />
+                  <span className="text-[10px]">Add video</span>
+                  <input type="file" accept="video/*" multiple className="hidden" onChange={onPickVideos} />
+                </label>
+              )}
+            </div>
+          </div>
+          <div>
             <Label htmlFor="loc">{type === "rental-info" ? "Location & landlord details *" : "Location *"}</Label>
             <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Near MUST main gate" maxLength={120} />
           </div>
