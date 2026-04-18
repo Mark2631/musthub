@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { GraduationCap, Home as HomeIcon, ExternalLink, Megaphone, MapPin, Plus, Info } from "lucide-react";
+import { GraduationCap, Home as HomeIcon, ExternalLink, Megaphone, MapPin, Plus, Info, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { ListingCard } from "@/components/ListingCard";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CommunityFeed } from "@/components/CommunityFeed";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_LINKS } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
@@ -33,7 +34,7 @@ export default function MySchool() {
 
   return (
     <div>
-      <header className="px-4 pt-5 pb-4 bg-card border-b border-border flex items-center justify-between">
+      <header className="px-4 pt-5 pb-4 bg-card border-b border-border flex items-center justify-between shadow-soft">
         <Logo compact />
         <div className="flex items-center gap-2">
           <ThemeToggle />
