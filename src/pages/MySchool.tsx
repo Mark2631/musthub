@@ -95,6 +95,17 @@ export default function MySchool() {
         <p className="text-[11px] text-muted-foreground text-center mt-2">More live updates coming soon.</p>
       </section>
 
+      {/* Community Feed */}
+      <section className="px-4 mt-7">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" /> Community feed
+          </h2>
+          <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">Sellers · Tips · Offers</span>
+        </div>
+        <CommunityFeed />
+      </section>
+
       {/* Useful links */}
       <section className="px-4 mt-7">
         <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
