@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ImagePlus, X, ShoppingBag, Wrench, Home as HomeIcon } from "lucide-react";
+import { ChevronLeft, ImagePlus, X, ShoppingBag, Wrench, Home as HomeIcon, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, ListingType } from "@/lib/constants";
@@ -44,6 +44,8 @@ export default function PostListing() {
   const [phone, setPhone] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [negotiable, setNegotiable] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +65,18 @@ export default function PostListing() {
   const removeFile = (i: number) => {
     setFiles((f) => f.filter((_, idx) => idx !== i));
     setPreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+  const onPickVideos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const list = Array.from(e.target.files ?? []).slice(0, 3 - videoFiles.length).filter((f) => f.size <= 30 * 1024 * 1024);
+    if (Array.from(e.target.files ?? []).some((f) => f.size > 30 * 1024 * 1024)) {
+      toast.error("Each video must be under 30 MB");
+    }
+    setVideoFiles((f) => [...f, ...list]);
+    setVideoPreviews((p) => [...p, ...list.map((f) => URL.createObjectURL(f))]);
+  };
+  const removeVideo = (i: number) => {
+    setVideoFiles((f) => f.filter((_, idx) => idx !== i));
+    setVideoPreviews((p) => p.filter((_, idx) => idx !== i));
   };
 
   const submit = async () => {
