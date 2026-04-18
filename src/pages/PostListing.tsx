@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ImagePlus, X, ShoppingBag, Wrench, Home as HomeIcon } from "lucide-react";
+import { ChevronLeft, ImagePlus, X, ShoppingBag, Wrench, Home as HomeIcon, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, ListingType } from "@/lib/constants";
@@ -44,6 +44,8 @@ export default function PostListing() {
   const [phone, setPhone] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [negotiable, setNegotiable] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +65,18 @@ export default function PostListing() {
   const removeFile = (i: number) => {
     setFiles((f) => f.filter((_, idx) => idx !== i));
     setPreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+  const onPickVideos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const list = Array.from(e.target.files ?? []).slice(0, 3 - videoFiles.length).filter((f) => f.size <= 30 * 1024 * 1024);
+    if (Array.from(e.target.files ?? []).some((f) => f.size > 30 * 1024 * 1024)) {
+      toast.error("Each video must be under 30 MB");
+    }
+    setVideoFiles((f) => [...f, ...list]);
+    setVideoPreviews((p) => [...p, ...list.map((f) => URL.createObjectURL(f))]);
+  };
+  const removeVideo = (i: number) => {
+    setVideoFiles((f) => f.filter((_, idx) => idx !== i));
+    setVideoPreviews((p) => p.filter((_, idx) => idx !== i));
   };
 
   const submit = async () => {
@@ -91,6 +105,15 @@ export default function PostListing() {
         const { data: { publicUrl } } = supabase.storage.from("listing-photos").getPublicUrl(path);
         photoUrls.push(publicUrl);
       }
+      const videoUrls: string[] = [];
+      for (const file of videoFiles) {
+        const ext = file.name.split(".").pop() ?? "mp4";
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("listing-videos").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from("listing-videos").getPublicUrl(path);
+        videoUrls.push(publicUrl);
+      }
       const { data, error } = await supabase
         .from("listings")
         .insert([{
@@ -103,6 +126,7 @@ export default function PostListing() {
           location,
           contact_phone: phone,
           photos: photoUrls,
+          videos: videoUrls,
           user_id: user.id,
         }])
         .select()
@@ -197,6 +221,33 @@ export default function PostListing() {
                   <ImagePlus className="w-6 h-6" />
                   <span className="text-[10px]">Add photo</span>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
+                </label>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-1.5">
+              <Video className="w-3.5 h-3.5" />
+              Video clips (up to 3, max 30MB each)
+              {type === "service" && <span className="text-primary text-[10px] font-semibold ml-1">Recommended</span>}
+            </Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {type === "service" ? "Show your work — hair designs, repair demos, etc." : "Optional video walkthrough."}
+            </p>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {videoPreviews.map((src, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-foreground">
+                  <video src={src} className="w-full h-full object-cover" muted playsInline />
+                  <button onClick={() => removeVideo(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {videoFiles.length < 3 && (
+                <label className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground cursor-pointer hover:border-primary hover:text-primary transition-colors">
+                  <Video className="w-6 h-6" />
+                  <span className="text-[10px]">Add video</span>
+                  <input type="file" accept="video/*" multiple className="hidden" onChange={onPickVideos} />
                 </label>
               )}
             </div>

@@ -46,6 +46,8 @@ export default function ListingDetail() {
 
   const isOwner = user?.id === listing.user_id;
   const photos = listing.photos.length ? listing.photos : [];
+  const videos = listing.videos ?? [];
+  const isService = listing.type === "service";
 
   const reportListing = async () => {
     if (!user) return toast.error("Sign in first");
@@ -73,8 +75,8 @@ export default function ListingDetail() {
 
   return (
     <div>
-      {/* Photo gallery */}
-      <div className="relative bg-muted aspect-square">
+      {/* Photo gallery — taller for services */}
+      <div className={`relative bg-muted ${isService ? "aspect-[4/3]" : "aspect-square"}`}>
         {photos.length ? (
           <>
             <img src={photos[photoIdx]} alt={listing.title} className="w-full h-full object-cover" />
@@ -86,6 +88,8 @@ export default function ListingDetail() {
               </div>
             )}
           </>
+        ) : videos.length ? (
+          <video src={videos[0]} className="w-full h-full object-cover" controls playsInline />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground"><ImageIcon className="w-16 h-16" /></div>
         )}
@@ -94,6 +98,18 @@ export default function ListingDetail() {
         </button>
         <Badge className="absolute top-4 right-4 bg-background/90 text-foreground hover:bg-background/90 border-0">{TYPE_LABELS[listing.type]}</Badge>
       </div>
+
+      {/* Video gallery for services (or any listing with videos + photos) */}
+      {videos.length > 0 && photos.length > 0 && (
+        <div className="px-5 pt-5">
+          <h2 className="font-bold text-sm mb-2">Video{videos.length > 1 ? "s" : ""}</h2>
+          <div className="space-y-3">
+            {videos.map((src, i) => (
+              <video key={i} src={src} controls playsInline className="w-full rounded-2xl bg-foreground aspect-video object-cover" />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-5 space-y-4">
@@ -127,16 +143,17 @@ export default function ListingDetail() {
         </div>
 
         {/* Seller */}
-        <div className="bg-card rounded-2xl p-4 shadow-soft">
+        <Link to={`/seller/${listing.user_id}`} className="block bg-card rounded-2xl p-4 shadow-soft hover:shadow-card transition-shadow">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Seller</p>
           <p className="font-semibold mt-1 flex items-center gap-1.5">
             {seller?.name ?? "MUST Student"}
             {seller?.is_verified_seller && <BadgeCheck className="w-4 h-4 text-primary" />}
+            <span className="ml-auto text-[11px] font-medium text-primary">View profile →</span>
           </p>
-          <a href={`tel:${listing.contact_phone}`} className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+          <span className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
             <Phone className="w-3.5 h-3.5" /> {listing.contact_phone}
-          </a>
-        </div>
+          </span>
+        </Link>
 
         <PrecautionBanner />
 

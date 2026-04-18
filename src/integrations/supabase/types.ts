@@ -174,7 +174,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      seed_demo_listings: { Args: never; Returns: undefined }
     }
     Enums: {
       listing_status: "available" | "sold"

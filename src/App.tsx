@@ -15,6 +15,7 @@ import ListingDetail from "./pages/ListingDetail";
 import MyListings from "./pages/MyListings";
 import MySchool from "./pages/MySchool";
 import Profile from "./pages/Profile";
+import SellerProfile from "./pages/SellerProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/my-listings" element={<AppLayout><MyListings /></AppLayout>} />
               <Route path="/my-school" element={<AppLayout><MySchool /></AppLayout>} />
               <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
+              <Route path="/seller/:userId" element={<AppLayout><SellerProfile /></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListingCard } from "@/components/ListingCard";
+import { ServiceCard } from "@/components/ServiceCard";
 import { CATEGORIES, ListingType } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -130,13 +131,19 @@ export default function Browse() {
 
       <section className="px-4 mt-4">
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-muted rounded-2xl animate-pulse" />)}
+          <div className={tab === "service" ? "space-y-3" : "grid grid-cols-2 gap-3"}>
+            {[...Array(6)].map((_, i) => <div key={i} className={tab === "service" ? "h-56 bg-muted rounded-3xl animate-pulse" : "aspect-[3/4] bg-muted rounded-2xl animate-pulse"} />)}
           </div>
         ) : filtered.length ? (
-          <div className="grid grid-cols-2 gap-3">
-            {filtered.map((l) => <ListingCard key={l.id} listing={l} />)}
-          </div>
+          tab === "service" ? (
+            <div className="space-y-3">
+              {filtered.map((l) => <ServiceCard key={l.id} listing={l} />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {filtered.map((l) => l.type === "service" ? <ServiceCard key={l.id} listing={l} /> : <ListingCard key={l.id} listing={l} />)}
+            </div>
+          )
         ) : (
           <div className="text-center py-16 text-sm text-muted-foreground">No listings match your filters.</div>
         )}
