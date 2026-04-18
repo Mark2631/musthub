@@ -105,6 +105,15 @@ export default function PostListing() {
         const { data: { publicUrl } } = supabase.storage.from("listing-photos").getPublicUrl(path);
         photoUrls.push(publicUrl);
       }
+      const videoUrls: string[] = [];
+      for (const file of videoFiles) {
+        const ext = file.name.split(".").pop() ?? "mp4";
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("listing-videos").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from("listing-videos").getPublicUrl(path);
+        videoUrls.push(publicUrl);
+      }
       const { data, error } = await supabase
         .from("listings")
         .insert([{
@@ -117,6 +126,7 @@ export default function PostListing() {
           location,
           contact_phone: phone,
           photos: photoUrls,
+          videos: videoUrls,
           user_id: user.id,
         }])
         .select()
