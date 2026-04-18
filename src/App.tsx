@@ -14,6 +14,8 @@ import PostListing from "./pages/PostListing";
 import ListingDetail from "./pages/ListingDetail";
 import MyListings from "./pages/MyListings";
 import MySchool from "./pages/MySchool";
+import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 import Profile from "./pages/Profile";
 import SellerProfile from "./pages/SellerProfile";
 import NotFound from "./pages/NotFound";
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/listing/:id" element={<AppLayout><ListingDetail /></AppLayout>} />
               <Route path="/my-listings" element={<AppLayout><MyListings /></AppLayout>} />
               <Route path="/my-school" element={<AppLayout><MySchool /></AppLayout>} />
+              <Route path="/messages" element={<AppLayout><Messages /></AppLayout>} />
+              <Route path="/messages/:id" element={<AppLayout><Conversation /></AppLayout>} />
               <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
               <Route path="/seller/:userId" element={<AppLayout><SellerProfile /></AppLayout>} />
               <Route path="*" element={<NotFound />} />
