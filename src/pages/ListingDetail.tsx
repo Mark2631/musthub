@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, MapPin, MessageCircle, Pencil, Trash2, CheckCircle2, RotateCcw, Phone, ImageIcon, BadgeCheck, Flag } from "lucide-react";
+import { ChevronLeft, MapPin, MessageCircle, Pencil, Trash2, CheckCircle2, RotateCcw, Phone, ImageIcon, BadgeCheck, Flag, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -187,11 +187,40 @@ export default function ListingDetail() {
             </AlertDialog>
           </div>
         ) : (
-          <Button asChild variant="hero" size="xl" className="w-full">
-            <a href={waLink(listing.contact_phone, listing.title)} target="_blank" rel="noreferrer">
-              <MessageCircle className="w-5 h-5" />Chat on WhatsApp
-            </a>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="xl"
+              className="flex-1"
+              onClick={async () => {
+                if (!user) { toast.error("Sign in to message"); nav("/auth"); return; }
+                if (user.id === listing.user_id) return;
+                // Find or create conversation
+                const { data: existing } = await supabase
+                  .from("conversations")
+                  .select("id")
+                  .eq("listing_id", listing.id)
+                  .eq("buyer_id", user.id)
+                  .eq("seller_id", listing.user_id)
+                  .maybeSingle();
+                if (existing) { nav(`/messages/${existing.id}`); return; }
+                const { data: created, error } = await supabase
+                  .from("conversations")
+                  .insert({ listing_id: listing.id, buyer_id: user.id, seller_id: listing.user_id })
+                  .select("id")
+                  .single();
+                if (error) return toast.error(error.message);
+                nav(`/messages/${created.id}`);
+              }}
+            >
+              <MessageSquare className="w-5 h-5" />Message
+            </Button>
+            <Button asChild variant="hero" size="xl" className="flex-1">
+              <a href={waLink(listing.contact_phone, listing.title)} target="_blank" rel="noreferrer">
+                <MessageCircle className="w-5 h-5" />WhatsApp
+              </a>
+            </Button>
+          </div>
         )}
       </div>
       <div className="h-20" />

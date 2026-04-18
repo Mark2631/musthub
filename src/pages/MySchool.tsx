@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { GraduationCap, Home as HomeIcon, ExternalLink, Megaphone, MapPin, Plus, Info } from "lucide-react";
+import { GraduationCap, Home as HomeIcon, ExternalLink, Megaphone, MapPin, Plus, Info, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { ListingCard } from "@/components/ListingCard";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CommunityFeed } from "@/components/CommunityFeed";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_LINKS } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
@@ -33,7 +34,7 @@ export default function MySchool() {
 
   return (
     <div>
-      <header className="px-4 pt-5 pb-4 bg-card border-b border-border flex items-center justify-between">
+      <header className="px-4 pt-5 pb-4 bg-card border-b border-border flex items-center justify-between shadow-soft">
         <Logo compact />
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -92,6 +93,17 @@ export default function MySchool() {
           <p className="text-xs text-muted-foreground mt-1">Join clubs and societies for upcoming campus events. Watch this space.</p>
         </div>
         <p className="text-[11px] text-muted-foreground text-center mt-2">More live updates coming soon.</p>
+      </section>
+
+      {/* Community Feed */}
+      <section className="px-4 mt-7">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" /> Community feed
+          </h2>
+          <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">Sellers · Tips · Offers</span>
+        </div>
+        <CommunityFeed />
       </section>
 
       {/* Useful links */}

@@ -11,7 +11,7 @@ export const ListingCard = ({ listing }: { listing: Listing }) => {
   return (
     <Link
       to={`/listing/${listing.id}`}
-      className="group block bg-card rounded-2xl overflow-hidden shadow-card hover:shadow-floating transition-all"
+      className="group block bg-card rounded-2xl overflow-hidden border border-border shadow-card hover:shadow-floating hover:-translate-y-0.5 transition-all"
     >
       <div className="aspect-square bg-muted relative overflow-hidden">
         {photo ? (
