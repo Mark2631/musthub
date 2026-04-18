@@ -41,7 +41,7 @@ export const ServiceCard = ({ listing }: { listing: Listing }) => {
             <Wrench className="w-12 h-12" />
           </div>
         )}
-        <Badge className="absolute top-3 left-3 bg-amber-500 text-white hover:bg-amber-500 border-0 text-[10px] font-bold uppercase tracking-wider shadow-soft">
+        <Badge className="absolute top-3 left-3 bg-warning text-warning-foreground hover:bg-warning border-0 text-[10px] font-bold uppercase tracking-wider shadow-soft">
           Service
         </Badge>
         {hasVideo && (
