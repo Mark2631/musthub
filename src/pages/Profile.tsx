@@ -174,14 +174,51 @@ export default function Profile() {
               </p>
             </div>
           </div>
+
           {!verified && (
-            <label className="mt-3 block">
-              <input type="file" accept="image/*" className="hidden" onChange={uploadSchoolId} disabled={uploadingId} />
-              <span className={`flex items-center justify-center gap-2 w-full h-10 rounded-md border border-input text-sm font-medium cursor-pointer hover:bg-muted/50 transition-colors ${uploadingId ? "opacity-50" : ""}`}>
-                <Upload className="w-4 h-4" />
-                {uploadingId ? "Uploading..." : "Upload School ID"}
-              </span>
-            </label>
+            <>
+              <div className="mt-4 rounded-xl bg-muted/40 border border-border p-4 text-xs leading-relaxed space-y-2">
+                <p className="font-semibold text-foreground text-sm">
+                  Upload a clear photo of your official MUST Students' Smart Card (Student ID).
+                </p>
+                <div>
+                  <p className="font-medium text-foreground">It must show:</p>
+                  <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                    <li>• Your passport photo</li>
+                    <li>• Full name</li>
+                    <li>• Student registration number</li>
+                    <li>• Meru University of Science and Technology (MUST) name or logo</li>
+                  </ul>
+                </div>
+                <p className="text-destructive font-medium">
+                  Do NOT upload exam papers, transcripts, admission letters, or other documents.
+                </p>
+                <div className="pt-1">
+                  <p className="font-medium text-foreground mb-2">
+                    Example of what a valid Student Smart Card looks like:
+                  </p>
+                  <div className="rounded-lg overflow-hidden border border-border bg-card">
+                    <img
+                      src="https://picsum.photos/id/64/600/400"
+                      alt="Example MUST student smart card"
+                      loading="lazy"
+                      className="w-full h-auto object-cover"
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground italic">
+                    Your card should look similar but include MUST branding and your details.
+                  </p>
+                </div>
+              </div>
+
+              <label className="mt-3 block">
+                <input type="file" accept="image/*" className="hidden" onChange={uploadSchoolId} disabled={uploadingId} />
+                <span className={`flex items-center justify-center gap-2 w-full h-10 rounded-md border border-input text-sm font-medium cursor-pointer hover:bg-muted/50 transition-colors ${uploadingId ? "opacity-50" : ""}`}>
+                  <Upload className="w-4 h-4" />
+                  {uploadingId ? "Uploading..." : "Upload School ID"}
+                </span>
+              </label>
+            </>
           )}
         </div>
 
