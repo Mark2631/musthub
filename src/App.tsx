@@ -18,6 +18,7 @@ import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
 import Profile from "./pages/Profile";
 import SellerProfile from "./pages/SellerProfile";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/messages/:id" element={<AppLayout><Conversation /></AppLayout>} />
               <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
               <Route path="/seller/:userId" element={<AppLayout><SellerProfile /></AppLayout>} />
+              <Route path="/admin" element={<AppLayout><Admin /></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
