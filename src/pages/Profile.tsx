@@ -235,3 +235,38 @@ export default function Profile() {
     </div>
   );
 }
+
+const AdminClaim = ({ onClaimed }: { onClaimed: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    setSubmitting(true);
+    const { data, error } = await supabase.rpc("claim_admin", { _code: code.trim() });
+    setSubmitting(false);
+    if (error) return toast.error(error.message);
+    if (data === true) {
+      toast.success("Admin access granted ✅");
+      onClaimed();
+    } else {
+      toast.error("Invalid code");
+    }
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="w-full mt-3 text-[10px] text-muted-foreground/60 hover:text-muted-foreground py-1 transition-colors">
+        Have an admin code?
+      </button>
+    );
+  }
+  return (
+    <div className="mt-3 bg-card rounded-2xl p-3 shadow-soft border border-border flex gap-2">
+      <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Enter admin code" className="flex-1" type="password" />
+      <Button onClick={submit} variant="hero" size="sm" disabled={!code.trim() || submitting}>
+        {submitting ? "..." : "Unlock"}
+      </Button>
+    </div>
+  );
+};
