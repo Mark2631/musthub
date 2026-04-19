@@ -115,9 +115,7 @@ export default function Messages() {
             {items.map((c) => (
               <li key={c.id}>
                 <Link to={`/messages/${c.id}`} className="flex items-center gap-3 p-4 hover:bg-muted/40 transition-colors">
-                  <div className="w-11 h-11 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold flex-shrink-0">
-                    {c.other_name.slice(0, 1).toUpperCase()}
-                  </div>
+                  <Avatar name={c.other_name} url={c.other_avatar} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold text-sm truncate">{c.other_name}</p>

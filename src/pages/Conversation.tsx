@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/Avatar";
 import { toast } from "sonner";
 
 type Message = {
@@ -30,6 +31,7 @@ export default function Conversation() {
   const [conv, setConv] = useState<Conv | null>(null);
   const [otherName, setOtherName] = useState("");
   const [otherVerified, setOtherVerified] = useState(false);
+  const [otherAvatar, setOtherAvatar] = useState<string | null>(null);
   const [otherId, setOtherId] = useState<string>("");
   const [listingTitle, setListingTitle] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -49,13 +51,14 @@ export default function Conversation() {
       setOtherId(other);
 
       const [{ data: prof }, { data: l }, { data: msgs }] = await Promise.all([
-        supabase.from("profiles").select("name,is_verified_seller").eq("user_id", other).maybeSingle(),
+        supabase.from("profiles").select("name,is_verified_seller,avatar_url").eq("user_id", other).maybeSingle(),
         supabase.from("listings").select("title").eq("id", c.listing_id).maybeSingle(),
         supabase.from("messages").select("*").eq("conversation_id", id).order("created_at"),
       ]);
       if (!mounted) return;
       setOtherName(prof?.name ?? "MUST Student");
       setOtherVerified(!!prof?.is_verified_seller);
+      setOtherAvatar(prof?.avatar_url ?? null);
       setListingTitle(l?.title ?? "Listing");
       setMessages((msgs ?? []) as Message[]);
 
@@ -105,9 +108,7 @@ export default function Conversation() {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <Link to={otherId ? `/seller/${otherId}` : "#"} className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold flex-shrink-0">
-            {otherName.slice(0, 1).toUpperCase()}
-          </div>
+          <Avatar name={otherName} url={otherAvatar} size="sm" />
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate flex items-center gap-1">
               {otherName}

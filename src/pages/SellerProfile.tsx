@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ListingCard } from "@/components/ListingCard";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Avatar } from "@/components/Avatar";
 import { waLink } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -58,9 +59,7 @@ export default function SellerProfile() {
 
       <section className="px-5 py-6">
         <div className="bg-card rounded-3xl p-6 shadow-card text-center">
-          <div className="w-20 h-20 rounded-full gradient-primary mx-auto flex items-center justify-center text-primary-foreground text-3xl font-extrabold shadow-floating">
-            {(profile.name || profile.email || "M")[0].toUpperCase()}
-          </div>
+          <Avatar name={profile.name || profile.email} url={profile.avatar_url} size="xl" className="mx-auto shadow-floating border-4 border-card" />
           <h2 className="font-bold text-lg mt-3 flex items-center justify-center gap-1.5">
             {profile.name || "MUST Student"}
             {profile.is_verified_seller && <BadgeCheck className="w-5 h-5 text-primary" />}
