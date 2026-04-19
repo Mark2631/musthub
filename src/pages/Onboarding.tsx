@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowRight, ShoppingBag, Wrench, GraduationCap } from "lucide-react";
+import { Check, ArrowRight, ShoppingBag, Wrench, GraduationCap, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -24,20 +24,32 @@ export default function Onboarding() {
   const [role, setRole] = useState<Role | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const allIds = INTERESTS.map((i) => i.id);
+  const allSelected = interests.length === allIds.length;
+
   const toggleInterest = (id: string) =>
     setInterests((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
+  const toggleSelectAll = () => setInterests(allSelected ? [] : allIds);
+
   const finish = async (chosenRole: Role) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in again");
+      nav("/auth", { replace: true });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
       .update({ interests, user_role: chosenRole, onboarded: true })
       .eq("user_id", user.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
     toast.success("Welcome to MeruCampusHub! 🎉");
-    nav("/", { replace: true });
+    // Hard redirect so AppLayout re-reads onboarded
+    window.location.replace("/");
   };
 
   return (
@@ -52,7 +64,22 @@ export default function Onboarding() {
           <>
             <h1 className="text-2xl font-extrabold tracking-tight">What are you interested in?</h1>
             <p className="text-sm text-muted-foreground mt-1">Pick all that apply.</p>
-            <div className="space-y-2.5 mt-5">
+
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className={cn(
+                "mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm transition-all border-2",
+                allSelected
+                  ? "bg-primary text-primary-foreground border-primary shadow-floating"
+                  : "bg-card border-primary text-primary hover:bg-primary/5"
+              )}
+            >
+              <CheckCheck className="w-5 h-5" />
+              {allSelected ? "Deselect all" : "Select all"}
+            </button>
+
+            <div className="space-y-2.5 mt-4">
               {INTERESTS.map((opt) => {
                 const active = interests.includes(opt.id);
                 return (
@@ -99,10 +126,18 @@ export default function Onboarding() {
                 return (
                   <button
                     key={value}
-                    onClick={() => setRole(value)}
+                    onClick={() => {
+                      setRole(value);
+                      // Buyer-only and Both: go straight to Home
+                      if (value === "buyer" || value === "both") {
+                        finish(value);
+                      }
+                    }}
+                    disabled={saving}
                     className={cn(
                       "w-full flex items-center gap-3 p-4 rounded-2xl bg-card shadow-soft text-left transition-all border-2",
-                      active ? "border-primary" : "border-transparent"
+                      active ? "border-primary" : "border-transparent",
+                      saving && "opacity-60"
                     )}
                   >
                     <div className="w-11 h-11 rounded-2xl gradient-primary flex items-center justify-center flex-shrink-0">

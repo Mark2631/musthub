@@ -8,6 +8,8 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ensureSeedData } from "@/lib/seed";
+import { greetingFor } from "@/lib/greeting";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
 
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
@@ -19,23 +21,28 @@ const sections = [
 ] as const;
 
 export default function Home() {
+  const { user } = useAuth();
   const [recent, setRecent] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ items: 0, housing: 0 });
+  const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       await ensureSeedData();
-      const [{ data }, items, housing] = await Promise.all([
+      const reqs: Promise<any>[] = [
         supabase.from("listings").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(8),
         supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["marketplace", "service"] as any),
         supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["rental-info", "rental"] as any),
-      ]);
+      ];
+      if (user) reqs.push(supabase.from("profiles").select("name").eq("user_id", user.id).maybeSingle());
+      const [{ data }, items, housing, prof] = await Promise.all(reqs);
       setRecent(data ?? []);
       setStats({ items: items.count ?? 0, housing: housing.count ?? 0 });
+      if (prof?.data?.name) setName(prof.data.name);
       setLoading(false);
     })();
-  }, []);
+  }, [user]);
 
   return (
     <div>
@@ -45,7 +52,7 @@ export default function Home() {
       </header>
 
       <section className="px-4 py-5">
-        <h1 className="text-2xl font-extrabold tracking-tight">Karibu! 👋</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">{greetingFor(name)} 👋</h1>
         <p className="text-sm text-muted-foreground mt-1">For MUST students only.</p>
 
         {/* Quick stats */}
