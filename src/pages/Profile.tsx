@@ -225,6 +225,8 @@ export default function Profile() {
           </Dialog>
         </div>
 
+        {!isAdmin && <AdminClaim onClaimed={() => window.location.reload()} />}
+
         <Button variant="ghost" className="w-full mt-5 text-destructive hover:text-destructive" onClick={handleSignOut}>
           <LogOut className="w-4 h-4" />Log out
         </Button>
