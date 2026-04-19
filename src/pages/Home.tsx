@@ -30,16 +30,17 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       await ensureSeedData();
-      const reqs: Promise<any>[] = [
-        supabase.from("listings").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(8),
-        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["marketplace", "service"] as any),
-        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["rental-info", "rental"] as any),
-      ];
-      if (user) reqs.push(supabase.from("profiles").select("name").eq("user_id", user.id).maybeSingle());
-      const [{ data }, items, housing, prof] = await Promise.all(reqs);
-      setRecent(data ?? []);
-      setStats({ items: items.count ?? 0, housing: housing.count ?? 0 });
-      if (prof?.data?.name) setName(prof.data.name);
+      const [recentRes, itemsRes, housingRes, profRes] = await Promise.all([
+        supabase.from("listings").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(8).then((r) => r),
+        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["marketplace", "service"] as any).then((r) => r),
+        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "available").in("type", ["rental-info", "rental"] as any).then((r) => r),
+        user
+          ? supabase.from("profiles").select("name").eq("user_id", user.id).maybeSingle().then((r) => r)
+          : Promise.resolve({ data: null } as any),
+      ]);
+      setRecent(recentRes.data ?? []);
+      setStats({ items: itemsRes.count ?? 0, housing: housingRes.count ?? 0 });
+      if (profRes?.data?.name) setName(profRes.data.name);
       setLoading(false);
     })();
   }, [user]);
