@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/Avatar";
 import { timeAgo } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -18,7 +19,7 @@ type Post = {
   related_listing_id: string | null;
   created_at: string;
 };
-type Profile = { user_id: string; name: string | null; is_verified_seller: boolean };
+type Profile = { user_id: string; name: string | null; is_verified_seller: boolean; avatar_url: string | null };
 type Comment = { id: string; post_id: string; user_id: string; body: string; created_at: string };
 
 const MAX_PHOTO_MB = 3;
@@ -52,7 +53,7 @@ export const CommunityFeed = () => {
       const userIds = Array.from(new Set(list.map((p) => p.user_id)));
       const postIds = list.map((p) => p.id);
       const [{ data: profs }, { data: lks }, { data: cmts }] = await Promise.all([
-        supabase.from("profiles").select("user_id,name,is_verified_seller").in("user_id", userIds),
+        supabase.from("profiles").select("user_id,name,is_verified_seller,avatar_url").in("user_id", userIds),
         supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
         supabase.from("post_comments").select("*").in("post_id", postIds).order("created_at"),
       ]);
@@ -223,8 +224,8 @@ export const CommunityFeed = () => {
         return (
           <article key={p.id} className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
             <header className="flex items-center gap-2.5 p-3">
-              <Link to={`/seller/${p.user_id}`} className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold flex-shrink-0">
-                {(prof?.name ?? "M").slice(0, 1).toUpperCase()}
+              <Link to={`/seller/${p.user_id}`} className="flex-shrink-0">
+                <Avatar name={prof?.name} url={prof?.avatar_url ?? null} size="sm" />
               </Link>
               <div className="flex-1 min-w-0">
                 <Link to={`/seller/${p.user_id}`} className="font-semibold text-sm flex items-center gap-1">

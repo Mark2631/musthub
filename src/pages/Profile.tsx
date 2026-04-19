@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Mail, Phone, GraduationCap, Save, BadgeCheck, HelpCircle, ListChecks, MessageCircle, Upload } from "lucide-react";
+import { LogOut, Mail, Phone, GraduationCap, Save, BadgeCheck, HelpCircle, ListChecks, MessageCircle, Upload, Camera, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,20 +9,25 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Avatar } from "@/components/Avatar";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { HELP_CONTACT } from "@/lib/constants";
 import { toast } from "sonner";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const nav = useNavigate();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [verified, setVerified] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingId, setUploadingId] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -31,6 +36,7 @@ export default function Profile() {
       setPhone(data?.phone ?? "");
       setEmail(data?.email ?? user.email ?? "");
       setVerified(!!data?.is_verified_seller);
+      setAvatarUrl(data?.avatar_url ?? null);
     });
   }, [user]);
 
@@ -42,6 +48,29 @@ export default function Profile() {
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
     setEditing(false);
+  };
+
+  const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) return toast.error("Image must be under 3 MB");
+    setUploadingAvatar(true);
+    try {
+      const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "3600" });
+      if (upErr) throw upErr;
+      const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      const { error: updErr } = await supabase.from("profiles").update({ avatar_url: url }).eq("user_id", user.id);
+      if (updErr) throw updErr;
+      setAvatarUrl(url);
+      toast.success("Profile picture updated 📸");
+    } catch (err: any) {
+      toast.error(err.message ?? "Upload failed");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const uploadSchoolId = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,9 +114,17 @@ export default function Profile() {
       </header>
 
       <section className="p-5">
-        <div className="bg-card rounded-3xl p-6 shadow-card text-center">
-          <div className="w-20 h-20 rounded-full gradient-primary mx-auto flex items-center justify-center text-primary-foreground text-3xl font-extrabold shadow-floating">
-            {(name || email || "M")[0].toUpperCase()}
+        <div className="bg-card rounded-3xl p-6 shadow-card text-center border border-border">
+          <div className="relative w-24 h-24 mx-auto">
+            <Avatar name={name || email} url={avatarUrl} size="xl" className="w-24 h-24 text-3xl shadow-floating border-4 border-card" />
+            <label className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-card cursor-pointer border-2 border-card hover:scale-105 transition-transform">
+              <input type="file" accept="image/*" hidden onChange={uploadAvatar} disabled={uploadingAvatar} />
+              {uploadingAvatar ? (
+                <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+            </label>
           </div>
           <h2 className="font-bold text-lg mt-3 flex items-center justify-center gap-1.5">
             {name || "MUST Student"}
@@ -98,7 +135,7 @@ export default function Profile() {
           </p>
         </div>
 
-        <div className="mt-5 bg-card rounded-2xl p-5 shadow-soft space-y-4">
+        <div className="mt-5 bg-card rounded-2xl p-5 shadow-soft border border-border space-y-4">
           <div>
             <Label htmlFor="n">Name</Label>
             <Input id="n" value={name} disabled={!editing} onChange={(e) => setName(e.target.value)} />
@@ -125,7 +162,7 @@ export default function Profile() {
         </div>
 
         {/* Verification card */}
-        <div className="mt-5 bg-card rounded-2xl p-5 shadow-soft">
+        <div className="mt-5 bg-card rounded-2xl p-5 shadow-soft border border-border">
           <div className="flex items-start gap-3">
             <BadgeCheck className={`w-6 h-6 flex-shrink-0 ${verified ? "text-primary" : "text-muted-foreground"}`} />
             <div className="flex-1">
@@ -149,11 +186,18 @@ export default function Profile() {
         </div>
 
         {/* Quick links */}
-        <div className="mt-5 bg-card rounded-2xl shadow-soft overflow-hidden divide-y divide-border">
+        <div className="mt-5 bg-card rounded-2xl shadow-soft border border-border overflow-hidden divide-y divide-border">
           <button onClick={() => nav("/my-listings")} className="w-full flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-muted/50 transition-colors text-left">
             <ListChecks className="w-4 h-4 text-primary" />
             <span className="font-medium flex-1">My Listings</span>
           </button>
+          {isAdmin && (
+            <button onClick={() => nav("/admin")} className="w-full flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-muted/50 transition-colors text-left">
+              <Shield className="w-4 h-4 text-primary" />
+              <span className="font-medium flex-1">Admin Dashboard</span>
+              <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">ADMIN</span>
+            </button>
+          )}
           <Dialog>
             <DialogTrigger asChild>
               <button className="w-full flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-muted/50 transition-colors text-left">
@@ -181,6 +225,8 @@ export default function Profile() {
           </Dialog>
         </div>
 
+        {!isAdmin && <AdminClaim onClaimed={() => window.location.reload()} />}
+
         <Button variant="ghost" className="w-full mt-5 text-destructive hover:text-destructive" onClick={handleSignOut}>
           <LogOut className="w-4 h-4" />Log out
         </Button>
@@ -189,3 +235,38 @@ export default function Profile() {
     </div>
   );
 }
+
+const AdminClaim = ({ onClaimed }: { onClaimed: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    setSubmitting(true);
+    const { data, error } = await supabase.rpc("claim_admin", { _code: code.trim() });
+    setSubmitting(false);
+    if (error) return toast.error(error.message);
+    if (data === true) {
+      toast.success("Admin access granted ✅");
+      onClaimed();
+    } else {
+      toast.error("Invalid code");
+    }
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="w-full mt-3 text-[10px] text-muted-foreground/60 hover:text-muted-foreground py-1 transition-colors">
+        Have an admin code?
+      </button>
+    );
+  }
+  return (
+    <div className="mt-3 bg-card rounded-2xl p-3 shadow-soft border border-border flex gap-2">
+      <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Enter admin code" className="flex-1" type="password" />
+      <Button onClick={submit} variant="hero" size="sm" disabled={!code.trim() || submitting}>
+        {submitting ? "..." : "Unlock"}
+      </Button>
+    </div>
+  );
+};
