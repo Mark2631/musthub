@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar } from "@/components/Avatar";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -10,12 +11,22 @@ const items = [
   { to: "/browse", icon: Search, label: "Browse" },
   { to: "/post", icon: PlusCircle, label: "Post", primary: true },
   { to: "/messages", icon: MessageSquare, label: "Messages" },
-  { to: "/profile", icon: User, label: "Profile" },
+  { to: "/profile", icon: User, label: "Profile", isProfile: true },
 ];
 
 export const BottomNav = () => {
   const { user } = useAuth();
   const [unread, setUnread] = useState(0);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); setName(null); return; }
+    supabase.from("profiles").select("avatar_url,name").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      setAvatarUrl(data?.avatar_url ?? null);
+      setName(data?.name ?? null);
+    });
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +49,9 @@ export const BottomNav = () => {
     const ch = supabase
       .channel("nav-msg-count")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => load())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` }, (p: any) => {
+        if (p.new?.avatar_url !== undefined) setAvatarUrl(p.new.avatar_url);
+      })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user]);
@@ -45,7 +59,7 @@ export const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border shadow-[0_-2px_10px_-4px_hsl(220_13%_18%_/_0.08)]">
       <div className="max-w-screen-sm mx-auto grid grid-cols-5 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
-        {items.map(({ to, icon: Icon, label, end, primary }) => (
+        {items.map(({ to, icon: Icon, label, end, primary, isProfile }) => (
           <NavLink
             key={to}
             to={to}
@@ -61,6 +75,10 @@ export const BottomNav = () => {
             {primary ? (
               <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center shadow-floating">
                 <Icon className="w-6 h-6 text-primary-foreground" strokeWidth={2.5} />
+              </div>
+            ) : isProfile && user ? (
+              <div className="relative">
+                <Avatar name={name} url={avatarUrl} size="xs" className="w-6 h-6 text-[10px] ring-2 ring-transparent [&]:ring-current/20" />
               </div>
             ) : (
               <div className="relative">

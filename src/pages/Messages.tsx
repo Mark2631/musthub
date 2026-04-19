@@ -7,6 +7,7 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/Avatar";
 import { timeAgo } from "@/lib/constants";
 
 type ConvRow = {
@@ -20,6 +21,7 @@ type ConvRow = {
 
 type Enriched = ConvRow & {
   other_name: string;
+  other_avatar: string | null;
   listing_title: string;
   unread: number;
 };
@@ -44,22 +46,27 @@ export default function Messages() {
       const listingIds = Array.from(new Set(list.map((c) => c.listing_id)));
 
       const [{ data: profs }, { data: listings }, { data: unreadRows }] = await Promise.all([
-        supabase.from("profiles").select("user_id,name").in("user_id", otherIds),
+        supabase.from("profiles").select("user_id,name,avatar_url").in("user_id", otherIds),
         supabase.from("listings").select("id,title").in("id", listingIds),
         supabase.from("messages").select("conversation_id").eq("read", false).neq("sender_id", user.id).in("conversation_id", list.map((c) => c.id)),
       ]);
 
-      const nameMap = new Map((profs ?? []).map((p) => [p.user_id, p.name ?? "MUST Student"]));
+      const profMap = new Map((profs ?? []).map((p) => [p.user_id, p]));
       const titleMap = new Map((listings ?? []).map((l) => [l.id, l.title]));
       const unreadMap = new Map<string, number>();
       (unreadRows ?? []).forEach((r) => unreadMap.set(r.conversation_id, (unreadMap.get(r.conversation_id) ?? 0) + 1));
 
-      setItems(list.map((c) => ({
-        ...c,
-        other_name: nameMap.get(c.buyer_id === user.id ? c.seller_id : c.buyer_id) ?? "MUST Student",
-        listing_title: titleMap.get(c.listing_id) ?? "Listing",
-        unread: unreadMap.get(c.id) ?? 0,
-      })));
+      setItems(list.map((c) => {
+        const otherId = c.buyer_id === user.id ? c.seller_id : c.buyer_id;
+        const p = profMap.get(otherId);
+        return {
+          ...c,
+          other_name: p?.name ?? "MUST Student",
+          other_avatar: p?.avatar_url ?? null,
+          listing_title: titleMap.get(c.listing_id) ?? "Listing",
+          unread: unreadMap.get(c.id) ?? 0,
+        };
+      }));
       setLoading(false);
     };
     load();
