@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { PhoneInput, isValidKEMobile } from "@/components/PhoneInput";
 
 const TYPE_CHOICES: { v: ListingType; label: string; icon: any; color: string; desc: string }[] = [
   { v: "marketplace", label: "Marketplace", icon: ShoppingBag, color: "from-emerald-500 to-green-600", desc: "Sell items: phones, laptops, furniture..." },
@@ -83,6 +84,10 @@ export default function PostListing() {
     if (!user || !type) return;
     if (!agreeTerms) {
       toast.error("Please agree to the Terms before posting");
+      return;
+    }
+    if (!isValidKEMobile(phone)) {
+      toast.error("Enter a valid Kenyan phone (e.g. 712345678)");
       return;
     }
     const parsed = schema.safeParse({
@@ -258,7 +263,7 @@ export default function PostListing() {
           </div>
           <div>
             <Label htmlFor="ph">Contact phone *</Label>
-            <Input id="ph" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+254 7XX XXX XXX" maxLength={20} />
+            <PhoneInput value={phone} onChange={setPhone} />
           </div>
 
           <label className="flex items-start gap-2 text-xs leading-relaxed bg-muted/40 p-3 rounded-xl">

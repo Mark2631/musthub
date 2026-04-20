@@ -10,6 +10,7 @@ import { Logo } from "@/components/Logo";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar } from "@/components/Avatar";
+import { PhoneInput, isValidKEMobile } from "@/components/PhoneInput";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { HELP_CONTACT } from "@/lib/constants";
@@ -42,6 +43,9 @@ export default function Profile() {
 
   const save = async () => {
     if (!user) return;
+    if (phone && !isValidKEMobile(phone)) {
+      return toast.error("Enter a valid Kenyan mobile (7XXXXXXXX or 1XXXXXXXX)");
+    }
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ name: name.trim(), phone: phone.trim() }).eq("user_id", user.id);
     setSaving(false);
@@ -142,7 +146,7 @@ export default function Profile() {
           </div>
           <div>
             <Label htmlFor="p" className="flex items-center gap-1.5"><Phone className="w-3 h-3" /> Phone</Label>
-            <Input id="p" type="tel" value={phone} disabled={!editing} onChange={(e) => setPhone(e.target.value)} />
+            <PhoneInput id="p" value={phone} disabled={!editing} onChange={setPhone} />
           </div>
           <div>
             <Label htmlFor="e" className="flex items-center gap-1.5"><Mail className="w-3 h-3" /> Email</Label>
@@ -190,9 +194,6 @@ export default function Profile() {
                     <li>• Meru University of Science and Technology (MUST) name or logo</li>
                   </ul>
                 </div>
-                <p className="text-destructive font-medium">
-                  Do NOT upload exam papers, transcripts, or any other documents.
-                </p>
               </div>
 
               <label className="mt-3 block">

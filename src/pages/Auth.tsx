@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhoneInput, isValidKEMobile } from "@/components/PhoneInput";
 import { toast } from "sonner";
 import { z } from "zod";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
 const passwordSchema = z.string().min(6, "Min 6 characters").max(72);
 const nameSchema = z.string().trim().min(2, "Enter your name").max(80);
-const phoneSchema = z.string().trim().min(7, "Enter a valid phone").max(20);
 
 export default function Auth() {
   const nav = useNavigate();
@@ -49,7 +49,7 @@ export default function Auth() {
     e.preventDefault();
     try {
       nameSchema.parse(name);
-      phoneSchema.parse(phone);
+      if (!isValidKEMobile(phone)) throw { errors: [{ message: "Enter a valid Kenyan phone (7XXXXXXXX or 1XXXXXXXX)" }] };
       emailSchema.parse(signupEmail);
       passwordSchema.parse(signupPwd);
     } catch (err: any) {
@@ -124,7 +124,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <Label htmlFor="p">Phone (WhatsApp)</Label>
-                  <Input id="p" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+254 7XX XXX XXX" />
+                  <PhoneInput id="p" value={phone} onChange={setPhone} />
                 </div>
                 <div>
                   <Label htmlFor="se">Email</Label>
