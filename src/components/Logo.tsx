@@ -1,7 +1,12 @@
+import { Link } from "react-router-dom";
 import logoImg from "@/assets/logo.png";
 
 export const Logo = ({ compact = false }: { compact?: boolean }) => (
-  <div className="flex items-center gap-2">
+  <Link
+    to="/"
+    aria-label="Go to MeruCampusHub home"
+    className="flex items-center gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary transition-opacity hover:opacity-90 active:opacity-75"
+  >
     <img
       src={logoImg}
       alt="MeruCampusHub logo"
@@ -15,5 +20,5 @@ export const Logo = ({ compact = false }: { compact?: boolean }) => (
         <div className="text-[10px] uppercase tracking-wider text-primary font-semibold">MUST Students Only</div>
       </div>
     )}
-  </div>
+  </Link>
 );
