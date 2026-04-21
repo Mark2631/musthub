@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, ImagePlus, X, ShoppingBag, Wrench, Home as HomeIcon, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +35,8 @@ const schema = z.object({
 export default function PostListing() {
   const { user } = useAuth();
   const nav = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEdit = !!editId;
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<ListingType | null>(null);
   const [title, setTitle] = useState("");
@@ -45,21 +47,56 @@ export default function PostListing() {
   const [phone, setPhone] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
+  const [existingVideos, setExistingVideos] = useState<string[]>([]);
   const [negotiable, setNegotiable] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
+
+  // Load existing listing for edit mode
+  useEffect(() => {
+    if (!isEdit || !user) return;
+    (async () => {
+      const { data, error } = await supabase.from("listings").select("*").eq("id", editId).maybeSingle();
+      if (error || !data) {
+        toast.error("Listing not found");
+        nav("/my-listings", { replace: true });
+        return;
+      }
+      if (data.user_id !== user.id) {
+        toast.error("You can only edit your own listings");
+        nav(`/listing/${editId}`, { replace: true });
+        return;
+      }
+      setType(data.type as ListingType);
+      setTitle(data.title);
+      setDescription(data.description);
+      setPrice(data.price != null ? String(data.price) : "");
+      setCategory(data.category);
+      setLocation(data.location);
+      setPhone(data.contact_phone);
+      setNegotiable(data.negotiable);
+      setExistingPhotos(data.photos ?? []);
+      setExistingVideos(data.videos ?? []);
+      setAgreeTerms(true);
+      setStep(2);
+      setLoadingEdit(false);
+    })();
+  }, [isEdit, editId, user, nav]);
 
   useEffect(() => {
-    if (!user) return;
+    if (isEdit || !user) return;
     supabase.from("profiles").select("phone").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data?.phone) setPhone(data.phone);
     });
-  }, [user]);
+  }, [user, isEdit]);
 
   const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const list = Array.from(e.target.files ?? []).slice(0, 5 - files.length);
+    const slots = 5 - files.length - existingPhotos.length;
+    const list = Array.from(e.target.files ?? []).slice(0, Math.max(0, slots));
     setFiles((f) => [...f, ...list]);
     setPreviews((p) => [...p, ...list.map((f) => URL.createObjectURL(f))]);
   };
@@ -67,8 +104,12 @@ export default function PostListing() {
     setFiles((f) => f.filter((_, idx) => idx !== i));
     setPreviews((p) => p.filter((_, idx) => idx !== i));
   };
+  const removeExistingPhoto = (i: number) => {
+    setExistingPhotos((p) => p.filter((_, idx) => idx !== i));
+  };
   const onPickVideos = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const list = Array.from(e.target.files ?? []).slice(0, 3 - videoFiles.length).filter((f) => f.size <= 30 * 1024 * 1024);
+    const slots = 3 - videoFiles.length - existingVideos.length;
+    const list = Array.from(e.target.files ?? []).slice(0, Math.max(0, slots)).filter((f) => f.size <= 30 * 1024 * 1024);
     if (Array.from(e.target.files ?? []).some((f) => f.size > 30 * 1024 * 1024)) {
       toast.error("Each video must be under 30 MB");
     }
@@ -78,6 +119,9 @@ export default function PostListing() {
   const removeVideo = (i: number) => {
     setVideoFiles((f) => f.filter((_, idx) => idx !== i));
     setVideoPreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+  const removeExistingVideo = (i: number) => {
+    setExistingVideos((v) => v.filter((_, idx) => idx !== i));
   };
 
   const submit = async () => {
@@ -101,7 +145,7 @@ export default function PostListing() {
     }
     setSubmitting(true);
     try {
-      const photoUrls: string[] = [];
+      const photoUrls: string[] = [...existingPhotos];
       for (const file of files) {
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -110,7 +154,7 @@ export default function PostListing() {
         const { data: { publicUrl } } = supabase.storage.from("listing-photos").getPublicUrl(path);
         photoUrls.push(publicUrl);
       }
-      const videoUrls: string[] = [];
+      const videoUrls: string[] = [...existingVideos];
       for (const file of videoFiles) {
         const ext = file.name.split(".").pop() ?? "mp4";
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -119,45 +163,61 @@ export default function PostListing() {
         const { data: { publicUrl } } = supabase.storage.from("listing-videos").getPublicUrl(path);
         videoUrls.push(publicUrl);
       }
-      const { data, error } = await supabase
-        .from("listings")
-        .insert([{
-          type: type as any,
-          title,
-          description,
-          price: type === "service" && !price ? null : price ? Number(price) : null,
-          negotiable,
-          category,
-          location,
-          contact_phone: phone,
-          photos: photoUrls,
-          videos: videoUrls,
-          user_id: user.id,
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      await supabase.from("profiles").update({ seller_agreed_at: new Date().toISOString() }).eq("user_id", user.id);
-      toast.success("Listed! 🎉");
-      nav(`/listing/${data.id}`, { replace: true });
+
+      const payload = {
+        type: type as any,
+        title,
+        description,
+        price: type === "service" && !price ? null : price ? Number(price) : null,
+        negotiable,
+        category,
+        location,
+        contact_phone: phone,
+        photos: photoUrls,
+        videos: videoUrls,
+      };
+
+      if (isEdit) {
+        const { error } = await supabase.from("listings").update(payload).eq("id", editId!);
+        if (error) throw error;
+        toast.success("Listing updated ✨");
+        nav(`/listing/${editId}`, { replace: true });
+      } else {
+        const { data, error } = await supabase
+          .from("listings")
+          .insert([{ ...payload, user_id: user.id }])
+          .select()
+          .single();
+        if (error) throw error;
+        await supabase.from("profiles").update({ seller_agreed_at: new Date().toISOString() }).eq("user_id", user.id);
+        toast.success("Listed! 🎉");
+        nav(`/listing/${data.id}`, { replace: true });
+      }
     } catch (err: any) {
-      toast.error(err.message ?? "Failed to post");
+      toast.error(err.message ?? "Failed to save");
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (loadingEdit) {
+    return <div className="p-10 flex justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  }
+
+  const totalPhotos = existingPhotos.length + files.length;
+  const totalVideos = existingVideos.length + videoFiles.length;
+
   return (
     <div>
       <header className="px-4 pt-5 pb-3 bg-card border-b border-border sticky top-0 z-30 flex items-center gap-3">
-        <button onClick={() => (step === 2 ? setStep(1) : nav(-1))} className="p-1 -ml-1">
+        <button onClick={() => (step === 2 && !isEdit ? setStep(1) : nav(-1))} className="p-1 -ml-1">
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="font-bold text-lg">Post a listing</h1>
-        <span className="ml-auto text-xs text-muted-foreground">Step {step}/2</span>
+        <h1 className="font-bold text-lg">{isEdit ? "Edit listing" : "Post a listing"}</h1>
+        {!isEdit && <span className="ml-auto text-xs text-muted-foreground">Step {step}/2</span>}
       </header>
 
-      {step === 1 && (
+      {step === 1 && !isEdit && (
         <div className="p-5 space-y-4">
           <p className="text-sm text-muted-foreground">What are you posting?</p>
           {TYPE_CHOICES.map(({ v, label, icon: Icon, color, desc }) => (
@@ -213,15 +273,23 @@ export default function PostListing() {
           <div>
             <Label>Photos (up to 5)</Label>
             <div className="grid grid-cols-3 gap-2 mt-1">
-              {previews.map((src, i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+              {existingPhotos.map((src, i) => (
+                <div key={`ex-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
                   <img src={src} className="w-full h-full object-cover" alt="" />
-                  <button onClick={() => removeFile(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                  <button type="button" onClick={() => removeExistingPhoto(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
-              {files.length < 5 && (
+              {previews.map((src, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+                  <img src={src} className="w-full h-full object-cover" alt="" />
+                  <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {totalPhotos < 5 && (
                 <label className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground cursor-pointer hover:border-primary hover:text-primary transition-colors">
                   <ImagePlus className="w-6 h-6" />
                   <span className="text-[10px]">Add photo</span>
@@ -240,15 +308,23 @@ export default function PostListing() {
               {type === "service" ? "Show your work — hair designs, repair demos, etc." : "Optional video walkthrough."}
             </p>
             <div className="grid grid-cols-3 gap-2 mt-2">
-              {videoPreviews.map((src, i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-foreground">
+              {existingVideos.map((src, i) => (
+                <div key={`exv-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-foreground">
                   <video src={src} className="w-full h-full object-cover" muted playsInline />
-                  <button onClick={() => removeVideo(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                  <button type="button" onClick={() => removeExistingVideo(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
-              {videoFiles.length < 3 && (
+              {videoPreviews.map((src, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-foreground">
+                  <video src={src} className="w-full h-full object-cover" muted playsInline />
+                  <button type="button" onClick={() => removeVideo(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {totalVideos < 3 && (
                 <label className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground cursor-pointer hover:border-primary hover:text-primary transition-colors">
                   <Video className="w-6 h-6" />
                   <span className="text-[10px]">Add video</span>
@@ -266,16 +342,18 @@ export default function PostListing() {
             <PhoneInput value={phone} onChange={setPhone} />
           </div>
 
-          <label className="flex items-start gap-2 text-xs leading-relaxed bg-muted/40 p-3 rounded-xl">
-            <Checkbox checked={agreeTerms} onCheckedChange={(v) => setAgreeTerms(!!v)} className="mt-0.5" />
-            <span>
-              I agree to the <span className="font-semibold">MeruCampusHub Terms</span>: I will list honestly,
-              not scam buyers, and meet in safe public places. Mispractices will get my account removed.
-            </span>
-          </label>
+          {!isEdit && (
+            <label className="flex items-start gap-2 text-xs leading-relaxed bg-muted/40 p-3 rounded-xl">
+              <Checkbox checked={agreeTerms} onCheckedChange={(v) => setAgreeTerms(!!v)} className="mt-0.5" />
+              <span>
+                I agree to the <span className="font-semibold">MeruCampusHub Terms</span>: I will list honestly,
+                not scam buyers, and meet in safe public places. Mispractices will get my account removed.
+              </span>
+            </label>
+          )}
 
           <Button onClick={submit} disabled={submitting} variant="hero" size="xl" className="w-full">
-            {submitting ? "Posting..." : "Post listing"}
+            {submitting ? (isEdit ? "Saving..." : "Posting...") : (isEdit ? "Save changes" : "Post listing")}
           </Button>
         </div>
       )}
