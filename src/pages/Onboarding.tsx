@@ -35,7 +35,7 @@ export default function Onboarding() {
   const finish = async (chosenRole: Role) => {
     if (!user) {
       toast.error("Please sign in again");
-      nav("/auth", { replace: true });
+      nav("/auth/login", { replace: true });
       return;
     }
     setSaving(true);
