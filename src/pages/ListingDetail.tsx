@@ -193,7 +193,7 @@ export default function ListingDetail() {
               size="xl"
               className="flex-1"
               onClick={async () => {
-                if (!user) { toast.error("Sign in to message"); nav("/auth/login"); return; }
+                if (!user) { toast.error("Messaging requires an account and is currently unavailable."); return; }
                 if (user.id === listing.user_id) return;
                 // Find or create conversation
                 const { data: existing } = await supabase
