@@ -83,7 +83,7 @@ export default function Messages() {
     return (
       <div className="p-8 text-center">
         <p className="text-muted-foreground mb-4">Sign in to see your messages.</p>
-        <Button asChild variant="hero"><Link to="/auth/login">Sign in</Link></Button>
+        <Button asChild variant="hero"><Link to="/browse">Browse listings</Link></Button>
       </div>
     );
   }
