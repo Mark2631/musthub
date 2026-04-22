@@ -207,7 +207,7 @@ export const CommunityFeed = () => {
         </form>
       ) : (
         <div className="bg-card rounded-2xl border border-border shadow-soft p-4 text-center text-sm text-muted-foreground">
-          <Link to="/auth" className="text-primary font-semibold">Sign in</Link> to post and engage with the community.
+          <Link to="/auth/login" className="text-primary font-semibold">Sign in</Link> to post and engage with the community.
         </div>
       )}
 

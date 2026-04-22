@@ -104,7 +104,7 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     await signOut();
-    nav("/auth", { replace: true });
+    nav("/auth/login", { replace: true });
   };
 
   return (
